@@ -61,6 +61,12 @@ type WordResp struct {
 							PosTips string `json:"pos_tips"`
 						} `json:"pos_entry"`
 						Translation string `json:"tran"`
+						SeeAlsos    struct {
+							SeeAlso []struct {
+								Seeword string `json:"seeword"`
+							} `json:"seeAlso"`
+							Seealso string `json:"seealso"`
+						} `json:"seeAlsos"`
 					} `json:"tran_entry"`
 				} `json:"entry"`
 			} `json:"entries"`
@@ -88,9 +94,15 @@ func (w *WordResp) String() string {
 
 	for i, te := range w.Collins.CollinsEntries[0].Entries.Entry {
 		e := te.TranEntry[0]
-		buf.WriteString(fmt.Sprintf("%d. %s %s %s\n", i+1, e.PosEntry.Pos, e.PosEntry.PosTips, e.Translation))
-		buf.WriteString(fmt.Sprintf("例：%s\n", e.ExampleSentences.Sentences[0].EnglishSentence))
-		buf.WriteString(fmt.Sprintf("%s\n\n", e.ExampleSentences.Sentences[0].ChineseSentence))
+		if len(e.ExampleSentences.Sentences) > 0 {
+			buf.WriteString(fmt.Sprintf("%d. %s %s %s\n", i+1, e.PosEntry.Pos, e.PosEntry.PosTips, e.Translation))
+			buf.WriteString(fmt.Sprintf("例：%s\n", e.ExampleSentences.Sentences[0].EnglishSentence))
+			buf.WriteString(fmt.Sprintf("%s\n\n", e.ExampleSentences.Sentences[0].ChineseSentence))
+		} else { // may be `see also` statements
+			if len(e.SeeAlsos.SeeAlso) > 0 {
+				buf.WriteString(fmt.Sprintf("%d See also：%s\n\n", i+1, e.SeeAlsos.SeeAlso[0].Seeword))
+			}
+		}
 	}
 
 	return buf.String()

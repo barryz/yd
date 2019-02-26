@@ -169,20 +169,20 @@ func usage() {
 	os.Exit(0)
 }
 
-func errOnExit(err error) {
+func exitOnErr(err error) {
 	fmt.Println(err)
 	os.Exit(2)
 }
 
 func main() {
 	if *word == "" {
-		errOnExit(fmt.Errorf("you must speicify a word to translate"))
+		exitOnErr(fmt.Errorf("you must speicify a word to translate"))
 	}
 
 	ydCli := NewYouDaoAPIClient(APIURL)
 	resp, err := ydCli.Translate(*word)
 	if err != nil {
-		errOnExit(err)
+		exitOnErr(err)
 	}
 
 	fmt.Println(resp)

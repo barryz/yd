@@ -1,36 +1,17 @@
 language: go
 
-go:
-  - 1.8
-  - 1.9.x
-  - 1.10.x
-  - 1.11.x
-  - 1.12.x
-  - master
+sudo: false
 
 matrix:
-  allow_failures:
-    go: master
-    fast_finish: true
+  include:
+    - go: "1.10.x"
+      script: go test -v --race ./...
+    - go: "1.11.x"
+      script: go test -v --race -mod=vendor ./...
+    - go: "1.12.x"
+      script: go test -v --race -mod=vendor ./...
 
-before_install:
-  - >-
-    curl -L -s https://github.com/golang/dep/releases/download/v0.3.2/dep-linux-amd64
-    -o $GOPATH/bin/dep
-  - chmod +x $GOPATH/bin/dep
-  - go get gopkg.in/alecthomas/gometalinter.v2
-  - gometalinter.v2 --install
+install: true
 
-install:
-  - dep ensure
-
-script:
-  - go test -v ./...
-  - gometalinter.v2 --vendor ./...
-  
-notifications:
-  email:
-    recipients:
-      - barryzxb@gmail.com
-    on_success: change
-    on_failure: always
+env:
+  - GO111MODULE=on

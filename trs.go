@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 )
@@ -76,33 +77,31 @@ type WordResp struct {
 
 // String for fmt package use directly.
 func (w *WordResp) String() string {
-	word := w.Collins.CollinsEntries[0].BasicEntries.BasicEntry[0].HeadWord
 	buf := new(strings.Builder)
-	buf.WriteString(word)
 	buf.WriteByte('\n')
 	buf.WriteByte('\n')
 
-	buf.WriteString(fmt.Sprintf("英音： [%s] \t美音： [%s]\n", w.EC.Word[0].UKPhonetic, w.EC.Word[0].USPhonetic))
-
-	for _, tr := range w.EC.Word[0].Trans {
-		buf.WriteString(fmt.Sprintf("%s\t", tr.Tr[0].L.I[0]))
-	}
-	buf.WriteByte('\n')
-	buf.WriteByte('\n')
-
-	buf.WriteString("柯林斯权威释义：\n")
-
-	for i, te := range w.Collins.CollinsEntries[0].Entries.Entry {
-		e := te.TranEntry[0]
-		if len(e.ExampleSentences.Sentences) > 0 {
-			buf.WriteString(fmt.Sprintf("%d. %s %s %s\n", i+1, e.PosEntry.Pos, e.PosEntry.PosTips, e.Translation))
-			buf.WriteString(fmt.Sprintf("例：%s\n", e.ExampleSentences.Sentences[0].EnglishSentence))
-			buf.WriteString(fmt.Sprintf("%s\n\n", e.ExampleSentences.Sentences[0].ChineseSentence))
-		} else { // may be `see also` statements
-			if len(e.SeeAlsos.SeeAlso) > 0 {
-				buf.WriteString(fmt.Sprintf("%d See also：%s\n\n", i+1, e.SeeAlsos.SeeAlso[0].Seeword))
+	if len(w.EC.Word) != 0 { // has english to chinese trans
+		buf.WriteString(fmt.Sprintf("英音： [%s] \t美音： [%s]\n", w.EC.Word[0].UKPhonetic, w.EC.Word[0].USPhonetic))
+		for _, tr := range w.EC.Word[0].Trans {
+			buf.WriteString(fmt.Sprintf("%s\t", tr.Tr[0].L.I[0]))
+		}
+	} else if len(w.Collins.CollinsEntries) != 0 { // has collins trans
+		buf.WriteString("柯林斯权威释义：\n\n")
+		for i, te := range w.Collins.CollinsEntries[0].Entries.Entry {
+			e := te.TranEntry[0]
+			if len(e.ExampleSentences.Sentences) > 0 {
+				buf.WriteString(fmt.Sprintf("%d. %s %s %s\n", i+1, e.PosEntry.Pos, e.PosEntry.PosTips, e.Translation))
+				buf.WriteString(fmt.Sprintf("例：%s\n", e.ExampleSentences.Sentences[0].EnglishSentence))
+				buf.WriteString(fmt.Sprintf("%s\n\n", e.ExampleSentences.Sentences[0].ChineseSentence))
+			} else { // may be `see also` statements
+				if len(e.SeeAlsos.SeeAlso) > 0 {
+					buf.WriteString(fmt.Sprintf("%d See also：%s\n\n", i+1, e.SeeAlsos.SeeAlso[0].Seeword))
+				}
 			}
 		}
+	} else {
+		buf.WriteString("may be invalid word")
 	}
 
 	return buf.String()
@@ -126,7 +125,7 @@ func NewYouDaoAPIClient(endpoint string) *YouDaoAPIClient {
 func (yd *YouDaoAPIClient) Translate(word string) (*WordResp, error) {
 	path := fmt.Sprintf("%s/jsonapi?q=%s&doctype=json&keyfrom=%s&vendor=%s&appVer=%s&client=%s&jsonversion=2",
 		yd.endpoint,
-		word,
+		url.QueryEscape(word),
 		apiKeyFrom,
 		apiVendor,
 		apiAppVersion,
@@ -162,9 +161,9 @@ var (
 )
 
 func usage() {
-	fmt.Fprintf(os.Stderr, "tr is translate command line program\n")
+	fmt.Fprintf(os.Stderr, "trs is translate command line program\n")
 	fmt.Fprintf(os.Stderr, "Usage:\n")
-	fmt.Fprintf(os.Stderr, "tr [option]\n")
+	fmt.Fprintf(os.Stderr, "trs [option]\n")
 	flag.PrintDefaults()
 	os.Exit(0)
 }
@@ -185,5 +184,5 @@ func main() {
 		exitOnErr(err)
 	}
 
-	fmt.Println(resp)
+	fmt.Printf("%s%s\n", *word, resp)
 }

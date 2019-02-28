@@ -81,22 +81,25 @@ func (w *WordResp) String() string {
 	buf.WriteByte('\n')
 	buf.WriteByte('\n')
 
-	if len(w.EC.Word) != 0 { // has english to chinese trans
-		buf.WriteString(fmt.Sprintf("英音： [%s] \t美音： [%s]\n", w.EC.Word[0].UKPhonetic, w.EC.Word[0].USPhonetic))
-		for _, tr := range w.EC.Word[0].Trans {
-			buf.WriteString(fmt.Sprintf("%s\t", tr.Tr[0].L.I[0]))
+	if len(w.EC.Word) != 0 || len(w.Collins.CollinsEntries) != 0 {
+		if len(w.EC.Word) != 0 { // has english to chinese trans
+			buf.WriteString(fmt.Sprintf("英音： [%s] \t美音： [%s]\n", w.EC.Word[0].UKPhonetic, w.EC.Word[0].USPhonetic))
+			for _, tr := range w.EC.Word[0].Trans {
+				buf.WriteString(fmt.Sprintf("%s\t", tr.Tr[0].L.I[0]))
+			}
 		}
-	} else if len(w.Collins.CollinsEntries) != 0 { // has collins trans
-		buf.WriteString("柯林斯权威释义：\n\n")
-		for i, te := range w.Collins.CollinsEntries[0].Entries.Entry {
-			e := te.TranEntry[0]
-			if len(e.ExampleSentences.Sentences) > 0 {
-				buf.WriteString(fmt.Sprintf("%d. %s %s %s\n", i+1, e.PosEntry.Pos, e.PosEntry.PosTips, e.Translation))
-				buf.WriteString(fmt.Sprintf("例：%s\n", e.ExampleSentences.Sentences[0].EnglishSentence))
-				buf.WriteString(fmt.Sprintf("%s\n\n", e.ExampleSentences.Sentences[0].ChineseSentence))
-			} else { // may be `see also` statements
-				if len(e.SeeAlsos.SeeAlso) > 0 {
-					buf.WriteString(fmt.Sprintf("%d See also：%s\n\n", i+1, e.SeeAlsos.SeeAlso[0].Seeword))
+		if len(w.Collins.CollinsEntries) != 0 { // has collins trans
+			buf.WriteString("\n\n柯林斯权威释义：\n\n")
+			for i, te := range w.Collins.CollinsEntries[0].Entries.Entry {
+				e := te.TranEntry[0]
+				if len(e.ExampleSentences.Sentences) > 0 {
+					buf.WriteString(fmt.Sprintf("%d. %s %s %s\n", i+1, e.PosEntry.Pos, e.PosEntry.PosTips, e.Translation))
+					buf.WriteString(fmt.Sprintf("例：%s\n", e.ExampleSentences.Sentences[0].EnglishSentence))
+					buf.WriteString(fmt.Sprintf("%s\n\n", e.ExampleSentences.Sentences[0].ChineseSentence))
+				} else { // may be `see also` statements
+					if len(e.SeeAlsos.SeeAlso) > 0 {
+						buf.WriteString(fmt.Sprintf("%d See also：%s\n\n", i+1, e.SeeAlsos.SeeAlso[0].Seeword))
+					}
 				}
 			}
 		}

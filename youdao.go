@@ -1,12 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
+	"text/template"
+	"time"
 )
 
 const (
@@ -14,62 +17,73 @@ const (
 	apiAppVersion = "2.4.0"
 	apiClientFrom = "macdict"
 	apiKeyFrom    = "mac.main"
-	APIURL        = "http://dict.youdao.com"
+	YouDaoAPI     = "http://dict.youdao.com"
 )
 
 // WordResp response abstraction with word translation from youdao api.
-type WordResp struct {
-	word string
-	EC   struct {
-		ExamType []string `json:"exam_type"`
-		Word     []struct {
-			Trans []struct {
-				Tr []struct {
-					L struct {
-						I []string `json:"i"`
-					} `json:"l"`
-				} `json:"tr"`
-			} `json:"trs"`
-			UKPhonetic string `json:"ukphone"`
-			UKSpeech   string `json:"ukspeech"`
-			USPhonetic string `json:"usphone"`
-			USSpeech   string `json:"usspeech"`
-		} `json:"word"`
-	} `json:"ec"`
-	Collins struct {
-		CollinsEntries []struct {
-			BasicEntries struct {
-				BasicEntry []struct {
-					CET      string `json:"cet"`
-					HeadWord string `json:"headword"`
-				} `json:"basic_entry"`
-			} `json:"basic_entries"`
-			Entries struct {
-				Entry []struct {
-					TranEntry []struct {
-						ExampleSentences struct {
-							Sentences []struct {
-								ChineseSentence string `json:"chn_sent"`
-								EnglishSentence string `json:"eng_sent"`
-							} `json:"sent"`
-						} `json:"exam_sents"`
-						PosEntry struct {
-							Pos     string `json:"pos"`
-							PosTips string `json:"pos_tips"`
-						} `json:"pos_entry"`
-						Translation string `json:"tran"`
-						SeeAlsos    struct {
-							SeeAlso []struct {
-								Seeword string `json:"seeword"`
-							} `json:"seeAlso"`
-							Seealso string `json:"seealso"`
-						} `json:"seeAlsos"`
-					} `json:"tran_entry"`
-				} `json:"entry"`
-			} `json:"entries"`
-		} `json:"collins_entries"`
-	} `json:"collins"`
-}
+type (
+	WordResp struct {
+		word string
+		EC   struct {
+			ExamType []string `json:"exam_type"`
+			Word     []struct {
+				Trans []struct {
+					Tr []struct {
+						L struct {
+							I []string `json:"i"`
+						} `json:"l"`
+					} `json:"tr"`
+				} `json:"trs"`
+				UKPhonetic string `json:"ukphone"`
+				UKSpeech   string `json:"ukspeech"`
+				USPhonetic string `json:"usphone"`
+				USSpeech   string `json:"usspeech"`
+			} `json:"word"`
+		} `json:"ec"`
+		Collins struct {
+			CollinsEntries []struct {
+				BasicEntries struct {
+					BasicEntry []struct {
+						CET      string `json:"cet"`
+						HeadWord string `json:"headword"`
+					} `json:"basic_entry"`
+				} `json:"basic_entries"`
+				Entries struct {
+					Entry []struct {
+						TranEntry []struct {
+							ExampleSentences struct {
+								Sentences []struct {
+									ChineseSentence string `json:"chn_sent"`
+									EnglishSentence string `json:"eng_sent"`
+								} `json:"sent"`
+							} `json:"exam_sents"`
+							PosEntry struct {
+								Pos     string `json:"pos"`
+								PosTips string `json:"pos_tips"`
+							} `json:"pos_entry"`
+							Translation string `json:"tran"`
+							SeeAlsos    struct {
+								SeeAlso []struct {
+									Seeword string `json:"seeword"`
+								} `json:"seeAlso"`
+								Seealso string `json:"seealso"`
+							} `json:"seeAlsos"`
+						} `json:"tran_entry"`
+					} `json:"entry"`
+				} `json:"entries"`
+			} `json:"collins_entries"`
+		} `json:"collins"`
+	}
+
+	// CollinsEntry collins translation entry
+	CollinsEntry struct {
+		Paraphrase      string
+		EngExampleSents string
+		ChiExampleSents string
+		SeeAlso         string
+		HasSeeAlso      bool
+	}
+)
 
 // Word returns realistic word name.
 func (w *WordResp) Word() string {
@@ -115,6 +129,11 @@ func (w *WordResp) Level() string {
 	return buf.String()
 }
 
+// Invalid indicates the word whether invalid or not.
+func (w *WordResp) Invalid() bool {
+	return !w.HasECTrans() && !w.HasCollins()
+}
+
 // ECTrans english to chinese translation string representation.
 func (w *WordResp) ECTrans() string {
 	if !w.HasECTrans() {
@@ -129,9 +148,9 @@ func (w *WordResp) ECTrans() string {
 	return buf.String()
 }
 
-// USSpeechParams uk speech link.
+// USSpeechLink uk speech link.
 func (w *WordResp) USSpeechLink() string {
-	prefix := fmt.Sprintf("%s/dictvoice?audio=", APIURL)
+	prefix := fmt.Sprintf("%s/dictvoice?audio=", YouDaoAPI)
 	if !w.HasECTrans() || w.EC.Word[0].USSpeech == "" {
 		return fmt.Sprintf("%s%s&type=2", prefix, w.Word())
 	}
@@ -139,14 +158,48 @@ func (w *WordResp) USSpeechLink() string {
 	return fmt.Sprintf("%s%s", prefix, w.EC.Word[0].USSpeech)
 }
 
-// UKSpeechParams us speech link.
+// UKSpeechLink us speech link.
 func (w *WordResp) UKSpeechLink() string {
-	prefix := fmt.Sprintf("%s/dictvoice?audio=", APIURL)
+	prefix := fmt.Sprintf("%s/dictvoice?audio=", YouDaoAPI)
 	if !w.HasECTrans() || w.EC.Word[0].UKSpeech == "" {
 		return fmt.Sprintf("%s%s&type=2", prefix, w.Word())
 	}
 
 	return fmt.Sprintf("%s%s", prefix, w.EC.Word[0].UKSpeech)
+}
+
+// CollinsTitle returns collins title.
+func (w *WordResp) CollinsTitle() string {
+	if !w.HasCollins() {
+		return ""
+	}
+
+	return fmt.Sprintf("柯林斯权威释义：\n\n")
+}
+
+// CollinsEntries returns collins translation entries.
+func (w *WordResp) CollinsEntries() []*CollinsEntry {
+	if !w.HasCollins() {
+		return []*CollinsEntry{}
+	}
+
+	entries := make([]*CollinsEntry, 0)
+	for i, te := range w.Collins.CollinsEntries[0].Entries.Entry {
+		e := te.TranEntry[0]
+		entry := &CollinsEntry{}
+		if len(e.ExampleSentences.Sentences) > 0 {
+			entry.Paraphrase = fmt.Sprintf("%d. %s %s %s\n", i+1, e.PosEntry.Pos, e.PosEntry.PosTips, e.Translation)
+			entry.EngExampleSents = fmt.Sprintf("例：%s\n", e.ExampleSentences.Sentences[0].EnglishSentence)
+			entry.ChiExampleSents = fmt.Sprintf("%s\n\n", e.ExampleSentences.Sentences[0].ChineseSentence)
+		} else { // may be `see also` statements
+			if len(e.SeeAlsos.SeeAlso) > 0 {
+				entry.HasSeeAlso = true
+				entry.SeeAlso = fmt.Sprintf("%d. See also：%s\n\n", i+1, e.SeeAlsos.SeeAlso[0].Seeword)
+			}
+		}
+		entries = append(entries, entry)
+	}
+	return entries
 }
 
 // CollinsTrans collins authority translation string representation.
@@ -156,23 +209,52 @@ func (w *WordResp) CollinsTrans() string {
 	}
 
 	buf := new(strings.Builder)
-	buf.WriteString("柯林斯权威释义：\n\n")
-	for i, te := range w.Collins.CollinsEntries[0].Entries.Entry {
-		e := te.TranEntry[0]
-		if len(e.ExampleSentences.Sentences) > 0 {
-			buf.WriteString(fmt.Sprintf("%d. %s %s %s\n", i+1, e.PosEntry.Pos, e.PosEntry.PosTips, e.Translation))
-			buf.WriteString(fmt.Sprintf("例：%s\n", e.ExampleSentences.Sentences[0].EnglishSentence))
-			buf.WriteString(fmt.Sprintf("%s\n\n", e.ExampleSentences.Sentences[0].ChineseSentence))
-		} else { // may be `see also` statements
-			if len(e.SeeAlsos.SeeAlso) > 0 {
-				buf.WriteString(fmt.Sprintf("%d See also：%s\n\n", i+1, e.SeeAlsos.SeeAlso[0].Seeword))
-			}
+	buf.WriteString(w.CollinsTitle())
+	for _, e := range w.CollinsEntries() {
+		if e.HasSeeAlso {
+			buf.WriteString(e.SeeAlso)
+		} else {
+			buf.WriteString(e.Paraphrase)
+			buf.WriteString(e.EngExampleSents)
+			buf.WriteString(e.ChiExampleSents)
 		}
+		buf.WriteByte('\n')
 	}
 
 	return buf.String()
 }
 
+// AnkiBackContent generate the back content which used for anki note.
+func (w *WordResp) AnkiBackContent() string {
+	if w.Invalid() {
+		return ""
+	}
+
+	buf := new(bytes.Buffer)
+	tmpl, err := template.New("anki").Parse(ankiBackContentTmpl)
+	if err != nil {
+		return ""
+	}
+
+	tmp := struct {
+		Phonetic, Level, ECTrans, CollinsTitle string
+		CollinsEntries                         []*CollinsEntry
+	}{
+		Phonetic:       w.Phonetic(),
+		Level:          w.Level(),
+		ECTrans:        w.ECTrans(),
+		CollinsEntries: w.CollinsEntries(),
+		CollinsTitle:   w.CollinsTitle(),
+	}
+	if err = tmpl.Execute(buf, tmp); err != nil {
+		fmt.Println(err)
+		return ""
+	}
+
+	return buf.String()
+}
+
+// Output the output string where display in terminal.
 func (w *WordResp) Output() string {
 	/*
 		word
@@ -181,14 +263,14 @@ func (w *WordResp) Output() string {
 		translation
 
 
-		collins transtaion:
+		collins translation:
 		1. ...
 
 		2. ...
 
 		3. ...
 	*/
-	if !w.HasECTrans() && !w.HasCollins() {
+	if w.Invalid() {
 		return fmt.Sprintf("may be invalid word")
 	}
 
@@ -230,7 +312,7 @@ type YouDaoAPIClient struct {
 func NewYouDaoAPIClient(endpoint string) *YouDaoAPIClient {
 	return &YouDaoAPIClient{
 		endpoint: endpoint,
-		client:   http.DefaultClient,
+		client:   &http.Client{Timeout: 3 * time.Second},
 	}
 }
 

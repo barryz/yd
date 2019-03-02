@@ -42,4 +42,5 @@ tags
 # End of https://www.gitignore.io/api/vim,go
 #
 main
-trs
+yd
+.idea

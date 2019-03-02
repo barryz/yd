@@ -44,7 +44,7 @@ type (
 		Deck  string
 		Front string
 		Back  string
-		// TODO: option not work as expectation, Workaround:  use a temporary file: (~/tmp/trs.db that record the checksum for specific word.
+		// TODO: option not work as expectation, Workaround:  use a temporary file: (~/tmp/yd.db that record the checksum for specific word.
 		AllowDup bool
 		Tags     []string
 		AudioURL string

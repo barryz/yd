@@ -17,8 +17,8 @@ var (
 )
 
 func usage() {
-	fmt.Fprintf(os.Stderr, "trs is translate command line program\n")
-	fmt.Fprintf(os.Stderr, "Usage: trs [options]\n")
+	fmt.Fprintf(os.Stderr, "yd is translate command line program\n")
+	fmt.Fprintf(os.Stderr, "Usage: yd [options]\n")
 	fmt.Fprintf(os.Stderr, "Options: \n")
 	fmt.Fprintf(os.Stderr, "-w       the word will translating\n")
 	fmt.Fprintf(os.Stderr, "-anki    whether import result to anki\n")

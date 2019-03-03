@@ -2,7 +2,7 @@
 
 # 安装
 ```bash
-$go get -u github.com/barryz/yd
+go get -u github.com/barryz/yd
 ```
 
 # 二进制下载
@@ -14,7 +14,7 @@ $go get -u github.com/barryz/yd
 ### 仅翻译单词
 
 ```sh
-$yd -w $word
+yd -w $word
 ```
 
 ### 翻译结果导入 [Anki](https://apps.ankiweb.net/) 中
@@ -29,12 +29,12 @@ yd -w $word -anki
 为了简化，可以使用 alias :
 
 ```bash
-echo 'alias yda="ANKI_DECK_NAME=$your_anki_deck_name yd -anki -w"' >> ~/.zshrc
+echo 'alias tra="ANKI_DECK_NAME=$your_anki_deck_name yd -anki -w"' >> ~/.zshrc
 # or
-echo 'alias yda="ANKI_DECK_NAME=$your_anki_deck_name yd -anki -w"' >> ~/.bashrc
+echo 'alias tra="ANKI_DECK_NAME=$your_anki_deck_name yd -anki -w"' >> ~/.bashrc
 
-# query word
-yda $word
+# import the result into Anki when you query the word
+tra $word
 ```
 
 ### Anki 相关

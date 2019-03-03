@@ -348,5 +348,9 @@ func (yd *YouDaoAPIClient) Translate(word string) (*WordResp, error) {
 		return nil, err
 	}
 
+	if wr.Invalid() {
+		return nil, fmt.Errorf("%s maybe a invalid word", wr.Word())
+	}
+
 	return wr, nil
 }

@@ -17,6 +17,14 @@ go get -u github.com/barryz/yd
 yd -w $word
 ```
 
+### 仅翻译单词
+
+```sh
+yd -w $word
+```
+
+
+
 ### 翻译结果导入 [Anki](https://apps.ankiweb.net/) 中
 
 前提是本机已安装 Anki ， 且配置好 AnkiConnect Add-ons。

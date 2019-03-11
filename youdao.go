@@ -218,7 +218,6 @@ func (w *WordResp) CollinsTrans() string {
 			buf.WriteString(e.EngExampleSents)
 			buf.WriteString(e.ChiExampleSents)
 		}
-		buf.WriteByte('\n')
 	}
 
 	return buf.String()

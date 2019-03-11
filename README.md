@@ -11,10 +11,16 @@ go get -u github.com/barryz/yd
 
 # 使用
 
-### 仅翻译单词
+### 翻译单词
 
 ```sh
 yd -w $word
+```
+
+### 翻译单词（美式发音）
+
+```sh
+yd -s -w $word
 ```
 
 ### 翻译结果导入 [Anki](https://apps.ankiweb.net/) 中
@@ -29,9 +35,9 @@ yd -w $word -anki
 为了简化，可以使用 alias :
 
 ```bash
-echo 'alias tra="ANKI_DECK_NAME=$your_anki_deck_name yd -anki -w"' >> ~/.zshrc
+echo 'alias tra="ANKI_DECK_NAME=$your_anki_deck_name yd -s -anki -w"' >> ~/.zshrc
 # or
-echo 'alias tra="ANKI_DECK_NAME=$your_anki_deck_name yd -anki -w"' >> ~/.bashrc
+echo 'alias tra="ANKI_DECK_NAME=$your_anki_deck_name yd -s -anki -w"' >> ~/.bashrc
 
 # import the result into Anki when you query the word
 tra $word
@@ -44,6 +50,7 @@ tra $word
 
 ### TODO
 
+- [x] 终端发音支持
 - [ ] 支持文本翻译
 - [ ] 支持汉英翻译
 - [ ] 其他

@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"time"
 )
 
 func init() {
@@ -12,8 +13,9 @@ func init() {
 }
 
 var (
-	word = flag.String("w", "", "the word will translating")
-	anki = flag.Bool("anki", false, "whether import result to anki")
+	word   = flag.String("w", "", "the word will translating")
+	anki   = flag.Bool("anki", false, "whether import result to anki")
+	speech = flag.Bool("s", false, "speech word in term mode")
 )
 
 func usage() {
@@ -22,6 +24,7 @@ func usage() {
 	fmt.Fprintf(os.Stderr, "Options: \n")
 	fmt.Fprintf(os.Stderr, "-w       the word will translating\n")
 	fmt.Fprintf(os.Stderr, "-anki    whether import result to anki\n")
+	fmt.Fprintf(os.Stderr, "-s       speech word in term mode\n")
 	os.Exit(0)
 }
 
@@ -60,6 +63,23 @@ func main() {
 		err = NewAnkiClient(AnkiConnectAPI).AddNote(note)
 		if err != nil {
 			exitOnErr(err)
+		}
+	}
+
+	if *speech {
+		done := make(chan struct{})
+		au := NewUSAudio(*word)
+		go func() {
+			if err := au.Play(resp.USSpeechLink(), done); err != nil {
+				fmt.Println(err)
+			}
+		}()
+
+		select {
+		case <-done:
+			return
+		case <-time.After(2 * time.Second):
+			return
 		}
 	}
 }

@@ -61,7 +61,7 @@ func (ua *USAudio) Play(url string, done chan struct{}) error {
 	})))
 
 	// waiting for finish audio play
-	<-time.After(300 * time.Millisecond)
+	<-time.After(1500 * time.Millisecond)
 	<-ua.done
 	return nil
 }

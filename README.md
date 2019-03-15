@@ -7,7 +7,7 @@ go get -u github.com/barryz/yd
 
 # 二进制下载
 
-暂无
+点击[下载](https://github.com/barryz/yd/releases/tag/v1.0.0)
 
 # 使用
 
